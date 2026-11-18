@@ -7,7 +7,8 @@
   "use strict";
 
   var DEFAULT_LABELS = {
-    demoBanner: "Демо-данные — замените их в файле config.js",
+    demoBanner: "Демо · вариант:",
+    variantNames: { classic: "Классика", rose: "Роза", aurora: "Аврора" },
     saveContact: "Сохранить контакт",
     contactTitle: "Связаться",
     call: "Позвонить",
@@ -143,6 +144,35 @@
 
   var qrCheck = window.CardQR.checkUrl(cfg.publicUrl);
 
+  // ---------- Вариант оформления ----------
+  var VARIANTS = ["classic", "rose", "aurora"];
+  var variant = (function () {
+    var fromUrl = "";
+    try { fromUrl = new URLSearchParams(window.location.search).get("v") || ""; } catch (e) {}
+    if (VARIANTS.indexOf(fromUrl) !== -1) return fromUrl; // ?v=rose — для показа вариантов
+    return VARIANTS.indexOf(str(cfg.variant)) !== -1 ? str(cfg.variant) : "classic";
+  })();
+  document.documentElement.setAttribute("data-variant", variant);
+
+  // Живой фон «Авроры»: световые пятна и мерцающие точки
+  if (variant === "aurora") {
+    var fx = el("div", { class: "fx", "aria-hidden": "true" }, [el("i"), el("i"), el("i")]);
+    for (var s = 0; s < 18; s++) {
+      fx.appendChild(el("b", {
+        style: "left:" + (Math.random() * 100).toFixed(1) + "%;top:" + (Math.random() * 100).toFixed(1) +
+          "%;--d:" + (2.4 + Math.random() * 3).toFixed(2) + "s;--delay:" + (Math.random() * 5).toFixed(2) + "s",
+      }));
+    }
+    document.body.insertBefore(fx, document.body.firstChild);
+    // Свечение за курсором (на компьютере)
+    window.addEventListener("pointermove", function (e) {
+      var card = document.getElementById("card");
+      var r = card.getBoundingClientRect();
+      card.style.setProperty("--mx", (e.clientX - r.left) + "px");
+      card.style.setProperty("--my", (e.clientY - r.top) + "px");
+    }, { passive: true });
+  }
+
   // ---------- Тема ----------
   (function applyTheme() {
     var t = cfg.theme || {};
@@ -156,9 +186,13 @@
       if (str(map[k])) document.documentElement.style.setProperty(k, str(map[k]));
     });
     // Цвет панели браузера на телефоне — в тон шапке
-    var metas = document.querySelectorAll('meta[name="theme-color"]');
-    if (metas[0] && str(t.accent)) metas[0].setAttribute("content", str(t.accent));
-    if (metas[1] && str(t.accentDark)) metas[1].setAttribute("content", str(t.accentDark));
+    var paneColor = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim();
+    if (paneColor) {
+      Array.prototype.forEach.call(document.querySelectorAll('meta[name="theme-color"]'), function (m) {
+        m.removeAttribute("media");
+        m.setAttribute("content", paneColor);
+      });
+    }
     if (str(cfg.lang)) document.documentElement.lang = str(cfg.lang);
     if (fullName) {
       var tail = [str(person.title), str(person.company)].filter(Boolean).join(", ");
@@ -347,7 +381,16 @@
     var main = document.getElementById("card");
     var parts = [];
 
-    if (cfg.demo) parts.push(el("p", { class: "demo-banner", text: L.demoBanner }));
+    // Плашка демо-режима с переключателем вариантов оформления
+    if (cfg.demo) {
+      var names = Object.assign({}, DEFAULT_LABELS.variantNames, L.variantNames || {});
+      parts.push(el("div", { class: "demo-banner" }, [
+        el("span", { text: L.demoBanner }),
+        el("nav", { class: "variant-links", "aria-label": L.demoBanner }, VARIANTS.map(function (v) {
+          return el("a", { href: "?v=" + v, "aria-current": v === variant ? "true" : null, text: names[v] || v });
+        })),
+      ]));
+    }
     var details = [];
 
     // Панель с именем и главным действием
@@ -370,6 +413,11 @@
         str(person.bio) ? el("p", { class: "bio", text: str(person.bio) }) : null,
         el("button", { type: "button", class: "btn btn-primary", id: "save-contact", onclick: saveContact },
           [iconNode("userPlus"), el("span", { text: L.saveContact })]),
+      ]),
+      // «Поделиться» и «QR-код» — в углах панели
+      el("div", { class: "pane-tools" }, [
+        el("button", { type: "button", class: "tool-btn", id: "share", "aria-label": L.share, title: L.share, icon: "share", onclick: share }),
+        el("button", { type: "button", class: "tool-btn", id: "show-qr", "aria-label": L.showQr, title: L.showQr, icon: "qr", onclick: openQr }),
       ]),
     ]);
     parts.push(hero);
@@ -410,13 +458,8 @@
       ]));
     }
 
-    // Поделиться и QR
-    details.push(el("div", { class: "section actions" }, [
-      el("button", { type: "button", class: "btn btn-secondary", id: "share", onclick: share }, [iconNode("share"), el("span", { text: L.share })]),
-      el("button", { type: "button", class: "btn btn-secondary", id: "show-qr", onclick: openQr }, [iconNode("qr"), el("span", { text: L.showQr })]),
-    ]));
-
-    parts.push(el("div", { class: "details" }, details));
+    if (details.length) parts.push(el("div", { class: "details" }, details));
+    main.classList.toggle("has-banner", !!cfg.demo);
     main.replaceChildren.apply(main, parts);
     main.removeAttribute("aria-busy");
   }

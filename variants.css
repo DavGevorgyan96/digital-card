@@ -1,0 +1,377 @@
+/*
+ * Варианты оформления. Выбор: config.js → variant, либо ?v=rose в адресе (для показа).
+ *   classic — тёмная панель, антиква (стили по умолчанию в styles.css)
+ *   rose    — светлый, нежный
+ *   aurora  — живой градиентный фон и анимация
+ */
+
+/* ---------- Переключатель вариантов (виден только при demo: true) ---------- */
+.demo-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 10px;
+}
+.variant-links { display: flex; gap: 6px; }
+.variant-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid rgba(0, 0, 0, .25);
+  border-color: color-mix(in srgb, currentColor 35%, transparent);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.variant-links a[aria-current="true"] {
+  background: var(--warn-text);
+  border-color: var(--warn-text);
+  color: var(--warn-bg);
+}
+
+/* =====================================================================
+   ROSE — светлый, нежный
+   ===================================================================== */
+:root[data-variant="rose"] {
+  --accent: var(--cfg-accent, #f3d9d2);
+  --on-accent: var(--cfg-on-accent, #4a1d2a);
+  --bg: #f3e9e4;
+  --surface: #fffaf7;
+  --surface-2: #f8ede8;
+  --text: #2b1d20;
+  --muted: #7a6266;
+  --line: #ecdcd6;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-variant="rose"] {
+    --accent: var(--cfg-accent-dark, #3c1d28);
+    --on-accent: var(--cfg-on-accent-dark, #f9e4dc);
+    --bg: #120c0e;
+    --surface: #1b1316;
+    --surface-2: #241a1e;
+    --text: #f3e8e4;
+    --muted: #b3a0a3;
+    --line: #33262a;
+  }
+}
+:root[data-variant="rose"] .pane {
+  background:
+    radial-gradient(120% 90% at 0% 100%, rgba(255, 255, 255, .5), transparent 60%),
+    var(--accent);
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-variant="rose"] .pane {
+    background:
+      radial-gradient(120% 90% at 0% 100%, rgba(255, 255, 255, .07), transparent 60%),
+      var(--accent);
+  }
+}
+:root[data-variant="rose"] .name { font-style: italic; font-weight: 400; letter-spacing: -.005em; }
+:root[data-variant="rose"] .btn-primary { box-shadow: 0 10px 26px rgba(74, 29, 42, .25); }
+
+/* =====================================================================
+   AURORA — живой фон, стекло, анимация
+   ===================================================================== */
+:root[data-variant="aurora"] {
+  --accent: #1c0c2b;
+  --on-accent: #ffffff;
+  --bg: #150a1f;
+  --surface: #24123a;
+  --surface-2: #301b4a;
+  --text: #fdf7ff;
+  --muted: #d2c4de;
+  --line: rgba(255, 255, 255, .2);
+  --focus: #ffd1e8;
+  --warn-bg: rgba(255, 255, 255, .1);
+  --warn-text: #ffe6f2;
+  --shadow: 0 30px 80px rgba(8, 0, 24, .55);
+  --grad: linear-gradient(100deg, #d6337f, #8a4be0 55%, #d6337f);
+  color-scheme: dark;
+}
+
+/* Фон: три медленно плывущих световых пятна и мерцающие точки */
+.fx {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: linear-gradient(160deg, #1d0b2d, #2b0f31 50%, #130a22);
+}
+.fx i {
+  position: absolute;
+  width: 78vmax;
+  height: 78vmax;
+  border-radius: 50%;
+  mix-blend-mode: screen;
+  will-change: transform;
+}
+.fx i:nth-child(1) {
+  top: -34vmax; left: -28vmax;
+  background: radial-gradient(circle, rgba(255, 86, 160, .8), transparent 62%);
+  animation: fx-a 13s ease-in-out infinite alternate;
+}
+.fx i:nth-child(2) {
+  bottom: -38vmax; right: -30vmax;
+  background: radial-gradient(circle, rgba(140, 100, 255, .78), transparent 62%);
+  animation: fx-b 17s ease-in-out infinite alternate;
+}
+.fx i:nth-child(3) {
+  top: 22%; left: 30%;
+  width: 56vmax; height: 56vmax;
+  background: radial-gradient(circle, rgba(255, 168, 120, .5), transparent 62%);
+  animation: fx-c 21s ease-in-out infinite alternate;
+}
+.fx b {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 8px 2px rgba(255, 255, 255, .7);
+  opacity: 0;
+  animation: fx-twinkle var(--d, 3s) ease-in-out var(--delay, 0s) infinite;
+}
+@keyframes fx-a { to { transform: translate(30vmax, 24vmax) scale(1.25); } }
+@keyframes fx-b { to { transform: translate(-28vmax, -26vmax) scale(1.2); } }
+@keyframes fx-c { to { transform: translate(-22vmax, 14vmax) scale(.8); } }
+@keyframes fx-twinkle {
+  0%, 100% { opacity: 0; transform: scale(.4); }
+  50% { opacity: .95; transform: scale(1.15); }
+}
+
+:root[data-variant="aurora"] body { background: #150a1f; }
+:root[data-variant="aurora"] .card {
+  position: relative;
+  z-index: 1;
+  background: transparent;
+  box-shadow: none;
+}
+:root[data-variant="aurora"] .demo-banner {
+  background: rgba(255, 255, 255, .08);
+  border-bottom: 1px solid rgba(255, 255, 255, .14);
+}
+:root[data-variant="aurora"] .variant-links a[aria-current="true"] {
+  background: #fff;
+  border-color: #fff;
+  color: #2b0f31;
+}
+
+:root[data-variant="aurora"] .pane { background: transparent; border-radius: 0; }
+:root[data-variant="aurora"] .pane::before { display: none; }
+
+/* Аватар: вращающееся градиентное кольцо и пульсирующее свечение */
+:root[data-variant="aurora"] .avatar {
+  position: relative;
+  border-color: transparent;
+  background: rgba(255, 255, 255, .13);
+  background-clip: content-box;
+}
+:root[data-variant="aurora"] .avatar::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: conic-gradient(#ff7eb6, #b388ff, #ffc09a, #7ee0ff, #ff7eb6);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3.5px), #000 calc(100% - 2.5px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3.5px), #000 calc(100% - 2.5px));
+  animation: au-spin 5s linear infinite;
+}
+:root[data-variant="aurora"] .avatar::after {
+  content: "";
+  position: absolute;
+  inset: -22px;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 110, 180, .55), transparent 68%);
+  animation: au-pulse 3.2s ease-in-out infinite;
+}
+
+/* Имя: переливающийся градиент, появление из размытия */
+:root[data-variant="aurora"] .name {
+  padding-bottom: .08em;
+  background: linear-gradient(100deg, #fff 0%, #ffd0e6 22%, #d9c8ff 45%, #ffdcc7 68%, #fff 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+:root[data-variant="aurora"] .eyebrow { letter-spacing: .26em; opacity: .9; }
+
+/* Главная кнопка: живой градиент, свечение и блик */
+:root[data-variant="aurora"] .btn-primary {
+  position: relative;
+  overflow: hidden;
+  border: 0;
+  background: var(--grad);
+  background-size: 220% 100%;
+  color: #fff;
+  box-shadow: 0 10px 34px rgba(230, 70, 150, .5);
+}
+:root[data-variant="aurora"] .btn-primary::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -70%;
+  width: 45%;
+  height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .55), transparent);
+  transform: skewX(-20deg);
+}
+:root[data-variant="aurora"] .btn-primary > * { position: relative; z-index: 1; }
+
+:root[data-variant="aurora"] .tool-btn {
+  border-color: rgba(255, 255, 255, .28);
+  background: rgba(255, 255, 255, .08);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+:root[data-variant="aurora"] .tool-btn:hover { background: var(--grad); border-color: transparent; color: #fff; }
+
+/* Нижний лист со стеклом */
+:root[data-variant="aurora"] .details {
+  background: rgba(255, 255, 255, .09);
+  border-top: 1px solid rgba(255, 255, 255, .24);
+  border-radius: 28px 28px 0 0;
+  -webkit-backdrop-filter: blur(26px) saturate(1.3);
+  backdrop-filter: blur(26px) saturate(1.3);
+}
+:root[data-variant="aurora"] .tile-icon,
+:root[data-variant="aurora"] .row-icon {
+  border-color: rgba(255, 255, 255, .26);
+  background: rgba(255, 255, 255, .1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25);
+}
+:root[data-variant="aurora"] .tile:hover .tile-icon,
+:root[data-variant="aurora"] .row:hover .row-icon {
+  background: var(--grad);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 10px 26px rgba(230, 70, 150, .55);
+}
+
+:root[data-variant="aurora"] .tile:nth-child(1), :root[data-variant="aurora"] .rows li:nth-child(1) { --i: 0; }
+:root[data-variant="aurora"] .tile:nth-child(2), :root[data-variant="aurora"] .rows li:nth-child(2) { --i: 1; }
+:root[data-variant="aurora"] .tile:nth-child(3), :root[data-variant="aurora"] .rows li:nth-child(3) { --i: 2; }
+:root[data-variant="aurora"] .tile:nth-child(4), :root[data-variant="aurora"] .rows li:nth-child(4) { --i: 3; }
+:root[data-variant="aurora"] .rows li:nth-child(5) { --i: 4; }
+:root[data-variant="aurora"] .rows li { --base: .95s; }
+:root[data-variant="aurora"] .tile { --base: .7s; }
+
+:root[data-variant="aurora"] .qr-dialog { border: 1px solid rgba(255, 255, 255, .18); }
+:root[data-variant="aurora"] .toast { background: #fff; color: #2b0f31; }
+
+@media (min-width: 600px) {
+  :root[data-variant="aurora"] .card {
+    background: rgba(255, 255, 255, .07);
+    border: 1px solid rgba(255, 255, 255, .2);
+    box-shadow: var(--shadow);
+    -webkit-backdrop-filter: blur(30px) saturate(1.3);
+    backdrop-filter: blur(30px) saturate(1.3);
+  }
+  :root[data-variant="aurora"] .details {
+    background: rgba(255, 255, 255, .05);
+    border-radius: 0;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+@media (min-width: 960px) {
+  :root[data-variant="aurora"] .details {
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-top: 0;
+    border-left: 1px solid rgba(255, 255, 255, .16);
+  }
+  /* Свечение, следующее за курсором */
+  :root[data-variant="aurora"] .card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: radial-gradient(460px circle at var(--mx, 30%) var(--my, 20%), rgba(255, 255, 255, .13), transparent 62%);
+  }
+}
+
+/* ---------- Анимация «Авроры» (только если не просили меньше движения) ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes au-spin { to { transform: rotate(1turn); } }
+  @keyframes au-pulse {
+    0%, 100% { opacity: .55; transform: scale(.92); }
+    50% { opacity: 1; transform: scale(1.12); }
+  }
+  @keyframes au-avatar-in {
+    from { opacity: 0; transform: scale(.3) rotate(-40deg); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes au-name-in {
+    from { opacity: 0; filter: blur(16px); transform: translateY(14px) scale(1.06); }
+    to { opacity: 1; filter: blur(0); transform: none; }
+  }
+  @keyframes au-shimmer { to { background-position: -250% 0; } }
+  @keyframes au-grad { to { background-position: 100% 0; } }
+  @keyframes au-glow {
+    0%, 100% { box-shadow: 0 10px 30px rgba(230, 70, 150, .42); }
+    50% { box-shadow: 0 14px 46px rgba(170, 100, 255, .75); }
+  }
+  @keyframes au-shine {
+    0% { left: -70%; }
+    38%, 100% { left: 140%; }
+  }
+  @keyframes au-sheet {
+    from { opacity: 0; transform: translateY(60px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes au-card {
+    from { opacity: 0; transform: translateY(34px) scale(.95); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes au-pop {
+    from { opacity: 0; transform: translateY(18px) scale(.3); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes au-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+  }
+
+  :root[data-variant="aurora"] .avatar { animation: au-avatar-in .9s cubic-bezier(.34, 1.56, .64, 1) both; }
+  :root[data-variant="aurora"] .name {
+    animation: au-name-in 1.1s var(--ease) .2s both, au-shimmer 6s linear 1.3s infinite;
+  }
+  :root[data-variant="aurora"] .btn-primary {
+    animation: rise .6s var(--ease) .45s both, au-grad 4s ease-in-out infinite alternate, au-glow 2.8s ease-in-out infinite;
+  }
+  :root[data-variant="aurora"] .btn-primary::after { animation: au-shine 3.4s ease-in-out 1.4s infinite; }
+  :root[data-variant="aurora"] .btn-primary:hover { transform: translateY(-2px) scale(1.02); }
+
+  :root[data-variant="aurora"] .details { animation: au-sheet .8s var(--ease) .35s both; }
+  :root[data-variant="aurora"] .details > * { animation: none; }
+  :root[data-variant="aurora"] .tile,
+  :root[data-variant="aurora"] .rows li {
+    animation: au-pop .65s cubic-bezier(.34, 1.56, .64, 1) both;
+    animation-delay: calc(var(--base, .7s) + var(--i, 0) * 80ms);
+  }
+  :root[data-variant="aurora"] .tile-icon,
+  :root[data-variant="aurora"] .row-icon {
+    animation: au-float 4s ease-in-out infinite;
+    animation-delay: calc(var(--i, 0) * -.7s);
+  }
+  :root[data-variant="aurora"] .tile:hover .tile-icon,
+  :root[data-variant="aurora"] .row:hover .row-icon {
+    animation-play-state: paused;
+    transform: translateY(-6px) scale(1.1);
+  }
+
+  @media (min-width: 600px) {
+    :root[data-variant="aurora"] .card { animation: au-card .9s var(--ease) both; }
+    :root[data-variant="aurora"] .details { animation: none; }
+  }
+}
