@@ -56,7 +56,7 @@
     share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3.500M7.500 8 12 3.500 16.500 8M5 12.500v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>',
     qr: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.500" y="3.500" width="6.500" height="6.500" rx="1"/><rect x="14" y="3.500" width="6.500" height="6.500" rx="1"/><rect x="3.500" y="14" width="6.500" height="6.500" rx="1"/><path d="M14 14h2.500v2.500H14zM18 18h2.500v2.500H18zM20.500 14v1M14 20.500h1"/></svg>',
     download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7.500 10.500 12 15l4.500-4.500M5 19.500h14"/></svg>',
-    chevron: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>',
+    chevron: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.500 16.500 16.500 7.500M9 7.500h7.500V15"/></svg>',
     close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>',
   };
 
@@ -155,6 +155,10 @@
     Object.keys(map).forEach(function (k) {
       if (str(map[k])) document.documentElement.style.setProperty(k, str(map[k]));
     });
+    // Цвет панели браузера на телефоне — в тон шапке
+    var metas = document.querySelectorAll('meta[name="theme-color"]');
+    if (metas[0] && str(t.accent)) metas[0].setAttribute("content", str(t.accent));
+    if (metas[1] && str(t.accentDark)) metas[1].setAttribute("content", str(t.accentDark));
     if (str(cfg.lang)) document.documentElement.lang = str(cfg.lang);
     if (fullName) {
       var tail = [str(person.title), str(person.company)].filter(Boolean).join(", ");
@@ -323,7 +327,7 @@
     return el("a", {
       class: "tile", href: href,
       target: external ? "_blank" : null, rel: external ? "noopener noreferrer" : null,
-    }, [iconNode(icon), el("span", { text: label })]);
+    }, [el("span", { class: "tile-icon", icon: icon }), el("span", { class: "tile-label", text: label })]);
   }
 
   function row(href, icon, label, caption, wrapCaption) {
@@ -344,9 +348,9 @@
     var parts = [];
 
     if (cfg.demo) parts.push(el("p", { class: "demo-banner", text: L.demoBanner }));
-    parts.push(el("div", { class: "cover", "aria-hidden": "true" }));
+    var details = [];
 
-    // Шапка
+    // Панель с именем и главным действием
     var avatar = el("div", { class: "avatar" });
     if (str(person.photo)) {
       var img = el("img", { src: str(person.photo), alt: fullName, width: "112", height: "112", decoding: "async" });
@@ -357,24 +361,18 @@
       avatar.setAttribute("aria-hidden", "true");
     }
     var title = str(person.title), company = str(person.company);
-    var hero = el("header", { class: "hero" }, [
+    var hero = el("header", { class: "pane" }, [
       avatar,
-      fullName ? el("h1", { class: "name", text: fullName }) : null,
-      title || company
-        ? el("p", { class: "role" }, [
-            title ? el("strong", { text: title }) : null,
-            company ? el("span", { text: company }) : null,
-          ])
-        : null,
-      str(person.bio) ? el("p", { class: "bio", text: str(person.bio) }) : null,
+      el("div", { class: "pane-body" }, [
+        title ? el("p", { class: "eyebrow", text: title }) : null,
+        fullName ? el("h1", { class: "name", text: fullName }) : null,
+        company ? el("p", { class: "company", text: company }) : null,
+        str(person.bio) ? el("p", { class: "bio", text: str(person.bio) }) : null,
+        el("button", { type: "button", class: "btn btn-primary", id: "save-contact", onclick: saveContact },
+          [iconNode("userPlus"), el("span", { text: L.saveContact })]),
+      ]),
     ]);
     parts.push(hero);
-
-    // Главное действие
-    parts.push(el("div", { class: "section" }, [
-      el("button", { type: "button", class: "btn btn-primary", id: "save-contact", onclick: saveContact },
-        [iconNode("userPlus"), el("span", { text: L.saveContact })]),
-    ]));
 
     // Связаться
     var tiles = [];
@@ -386,7 +384,7 @@
     var tg = telegramUrl(contacts.telegram);
     if (tg) tiles.push(tile(tg, "telegram", L.telegram, true));
     if (tiles.length) {
-      parts.push(el("section", { class: "section", "aria-labelledby": "contact-title" }, [
+      details.push(el("section", { class: "section", "aria-labelledby": "contact-title" }, [
         el("h2", { class: "section-title", id: "contact-title", text: L.contactTitle }),
         el("div", { class: "tiles" }, tiles),
       ]));
@@ -406,18 +404,19 @@
       rows.push(r);
     }
     if (rows.length) {
-      parts.push(el("section", { class: "section", "aria-labelledby": "links-title" }, [
+      details.push(el("section", { class: "section", "aria-labelledby": "links-title" }, [
         el("h2", { class: "section-title", id: "links-title", text: L.linksTitle }),
         el("ul", { class: "rows" }, rows),
       ]));
     }
 
     // Поделиться и QR
-    parts.push(el("div", { class: "section actions" }, [
+    details.push(el("div", { class: "section actions" }, [
       el("button", { type: "button", class: "btn btn-secondary", id: "share", onclick: share }, [iconNode("share"), el("span", { text: L.share })]),
       el("button", { type: "button", class: "btn btn-secondary", id: "show-qr", onclick: openQr }, [iconNode("qr"), el("span", { text: L.showQr })]),
     ]));
 
+    parts.push(el("div", { class: "details" }, details));
     main.replaceChildren.apply(main, parts);
     main.removeAttribute("aria-busy");
   }
