@@ -1024,11 +1024,15 @@
 @media (max-height: 640px) {
   .au-bio { -webkit-line-clamp: 2; line-clamp: 2; }
 }
-@media (max-height: 600px) and (max-width: 959px) {
-  .au-orbit { --S: clamp(150px, min(46vw, calc(28 * var(--vh))), 200px); }
+@media (max-height: 690px) and (max-width: 959px) {
+  .au-orbit { --S: clamp(150px, min(46vw, calc(26 * var(--vh))), 200px); }
   .au-avatar { inset: 30%; }
   .au-sat { width: 44px; height: 44px; margin: -22px; transform: rotate(var(--a, 0deg)) translateX(calc(var(--S) / 2 - 22px)) rotate(calc(var(--a, 0deg) * -1)); }
   .au-path { inset: 22px; }
+  .au-bio { font-size: 13.5px; line-height: 1.4; }
+  .au-dock-item { min-height: 46px; }
+}
+@media (max-height: 600px) and (max-width: 959px) {
   .au-bio { display: none; }
 }
 
