@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Цифровая визитка</title>
+  <meta name="description" content="Цифровая визитка: контакты, соцсети и сохранение контакта в телефон.">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="theme-color" content="#f3f1ec" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#101312" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main id="card" class="card" aria-busy="true"></main>
+
+  <noscript>
+    <p class="noscript">Для отображения визитки включите JavaScript в браузере.</p>
+  </noscript>
+
+  <dialog id="qr-dialog" class="qr-dialog" aria-labelledby="qr-title"></dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="config.js"></script>
+  <script src="js/vendor/qrcode.js"></script>
+  <script src="js/vcard.js"></script>
+  <script src="js/qr.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
