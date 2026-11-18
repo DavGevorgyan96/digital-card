@@ -7,8 +7,9 @@
   "use strict";
 
   var DEFAULT_LABELS = {
-    demoBanner: "Демо · вариант:",
-    variantNames: { classic: "Классика", rose: "Роза", aurora: "Аврора" },
+    demoBanner: "Демо:",
+    variantNames: { classic: "Классика", editorial: "Журнал", luxe: "Золото", aurora: "Аврора" },
+    cardWord: "Визитка",
     saveContact: "Сохранить контакт",
     contactTitle: "Связаться",
     call: "Позвонить",
@@ -145,32 +146,31 @@
   var qrCheck = window.CardQR.checkUrl(cfg.publicUrl);
 
   // ---------- Вариант оформления ----------
-  var VARIANTS = ["classic", "rose", "aurora"];
+  // У каждого варианта своя композиция (см. раздел «Сборка страницы») и свои стили в variants.css.
+  var VARIANTS = ["classic", "editorial", "luxe", "aurora"];
   var variant = (function () {
     var fromUrl = "";
     try { fromUrl = new URLSearchParams(window.location.search).get("v") || ""; } catch (e) {}
-    if (VARIANTS.indexOf(fromUrl) !== -1) return fromUrl; // ?v=rose — для показа вариантов
+    if (VARIANTS.indexOf(fromUrl) !== -1) return fromUrl; // ?v=luxe — для показа вариантов
     return VARIANTS.indexOf(str(cfg.variant)) !== -1 ? str(cfg.variant) : "classic";
   })();
   document.documentElement.setAttribute("data-variant", variant);
 
-  // Живой фон «Авроры»: световые пятна и мерцающие точки
+  function rnd(min, max, digits) { return (min + Math.random() * (max - min)).toFixed(digits || 0); }
+
+  // Живой фон: «Аврора» — световые пятна и мерцающие точки, «Золото» — лучи и золотая пыль
   if (variant === "aurora") {
-    var fx = el("div", { class: "fx", "aria-hidden": "true" }, [el("i"), el("i"), el("i")]);
-    for (var s = 0; s < 18; s++) {
-      fx.appendChild(el("b", {
-        style: "left:" + (Math.random() * 100).toFixed(1) + "%;top:" + (Math.random() * 100).toFixed(1) +
-          "%;--d:" + (2.4 + Math.random() * 3).toFixed(2) + "s;--delay:" + (Math.random() * 5).toFixed(2) + "s",
-      }));
+    var fxA = el("div", { class: "fx", "aria-hidden": "true" }, [el("i"), el("i"), el("i")]);
+    for (var s1 = 0; s1 < 18; s1++) {
+      fxA.appendChild(el("b", { style: "left:" + rnd(0, 100, 1) + "%;top:" + rnd(0, 100, 1) + "%;--d:" + rnd(2.4, 5.4, 2) + "s;--delay:" + rnd(0, 5, 2) + "s" }));
     }
-    document.body.insertBefore(fx, document.body.firstChild);
-    // Свечение за курсором (на компьютере)
-    window.addEventListener("pointermove", function (e) {
-      var card = document.getElementById("card");
-      var r = card.getBoundingClientRect();
-      card.style.setProperty("--mx", (e.clientX - r.left) + "px");
-      card.style.setProperty("--my", (e.clientY - r.top) + "px");
-    }, { passive: true });
+    document.body.insertBefore(fxA, document.body.firstChild);
+  } else if (variant === "luxe") {
+    var fxL = el("div", { class: "lxfx", "aria-hidden": "true" }, [el("div", { class: "lx-rays" })]);
+    for (var s2 = 0; s2 < 22; s2++) {
+      fxL.appendChild(el("b", { style: "left:" + rnd(0, 100, 1) + "%;--x:" + rnd(-60, 60) + "px;--d:" + rnd(7, 15, 1) + "s;--delay:-" + rnd(0, 15, 1) + "s" }));
+    }
+    document.body.insertBefore(fxL, document.body.firstChild);
   }
 
   // ---------- Тема ----------
@@ -357,110 +357,275 @@
   });
 
   // ---------- Сборка страницы ----------
-  function tile(href, icon, label, external) {
-    return el("a", {
-      class: "tile", href: href,
-      target: external ? "_blank" : null, rel: external ? "noopener noreferrer" : null,
-    }, [el("span", { class: "tile-icon", icon: icon }), el("span", { class: "tile-label", text: label })]);
+  // Общие данные для всех вариантов: проверенные ссылки и подписи.
+  function collectContacts() {
+    var list = [];
+    var tel = window.CardVCard.normalizePhone(contacts.phone);
+    if (tel) list.push({ key: "call", href: "tel:" + tel, icon: "phone", label: L.call, value: str(contacts.phone) });
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str(contacts.email))) {
+      list.push({ key: "email", href: "mailto:" + str(contacts.email), icon: "mail", label: L.email, value: str(contacts.email) });
+    }
+    var wa = phoneDigits(contacts.whatsapp);
+    if (wa) list.push({ key: "whatsapp", href: "https://wa.me/" + wa, icon: "whatsapp", label: L.whatsapp, value: str(contacts.whatsapp), external: true });
+    var tg = telegramUrl(contacts.telegram);
+    if (tg) list.push({ key: "telegram", href: tg, icon: "telegram", label: L.telegram, value: linkCaption(tg), external: true });
+    return list;
   }
 
-  function row(href, icon, label, caption, wrapCaption) {
-    return el("li", {}, [
-      el("a", { class: "row", href: href, target: "_blank", rel: "noopener noreferrer" }, [
-        el("span", { class: "row-icon", icon: icon }),
-        el("span", { class: "row-text" }, [
-          el("span", { class: "row-label", text: label }),
-          caption ? el("span", { class: "row-sub" + (wrapCaption ? " wrap" : ""), text: caption }) : null,
-        ]),
-        (function () { var c = iconNode("chevron"); c.setAttribute("class", "row-chevron"); return c; })(),
-      ]),
+  function collectLinks() {
+    var list = [];
+    [["instagram", "instagram"], ["facebook", "facebook"], ["linkedin", "linkedin"], ["website", "globe"]].forEach(function (pair) {
+      var url = webUrl(links[pair[0]]);
+      if (url) list.push({ key: pair[0], href: url, icon: pair[1], label: L[pair[0]], caption: linkCaption(url, pair[0] === "website") });
+    });
+    var addressText = [address.street, address.city, address.region, address.postalCode, address.country].map(str).filter(Boolean).join(", ");
+    if (addressText) {
+      list.push({
+        key: "address", icon: "pin", label: L.address, caption: addressText, wrap: true,
+        href: webUrl(address.mapUrl) || "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(addressText),
+        aria: L.address + ": " + addressText + ". " + L.openMap,
+      });
+    }
+    return list;
+  }
+
+  function linkAttrs(item, cls, external) {
+    return {
+      class: cls, href: item.href, "aria-label": item.aria || null,
+      target: external ? "_blank" : null, rel: external ? "noopener noreferrer" : null,
+    };
+  }
+
+  // Фото или инициалы внутри переданного элемента
+  function fillPortrait(node) {
+    if (str(person.photo)) {
+      var img = el("img", { src: str(person.photo), alt: fullName, decoding: "async" });
+      img.addEventListener("error", function () { node.textContent = initials(); });
+      node.appendChild(img);
+    } else {
+      node.textContent = initials();
+      node.setAttribute("aria-hidden", "true");
+    }
+    return node;
+  }
+
+  function saveButton(cls, trailingIcon) {
+    return el("button", { type: "button", class: cls, id: "save-contact", onclick: saveContact },
+      trailingIcon
+        ? [el("span", { text: L.saveContact }), iconNode(trailingIcon)]
+        : [iconNode("userPlus"), el("span", { text: L.saveContact })]);
+  }
+
+  function toolButtons(cls) {
+    return [
+      el("button", { type: "button", class: cls, id: "share", "aria-label": L.share, title: L.share, icon: "share", onclick: share }),
+      el("button", { type: "button", class: cls, id: "show-qr", "aria-label": L.showQr, title: L.showQr, icon: "qr", onclick: openQr }),
+    ];
+  }
+
+  // Плашка демо-режима с переключателем вариантов оформления
+  function banner() {
+    if (!cfg.demo) return null;
+    var names = Object.assign({}, DEFAULT_LABELS.variantNames, L.variantNames || {});
+    return el("div", { class: "demo-banner" }, [
+      el("span", { class: "demo-label", text: L.demoBanner }),
+      el("nav", { class: "variant-links", "aria-label": L.demoBanner }, VARIANTS.map(function (v) {
+        return el("a", { href: "?v=" + v, "aria-current": v === variant ? "true" : null, text: names[v] || v });
+      })),
     ]);
+  }
+
+  var title = str(person.title), company = str(person.company), bio = str(person.bio);
+
+  /* ===== Классика: панель с именем + детали ===== */
+  function renderClassic(main, contactList, linkList) {
+    var details = [];
+    if (contactList.length) {
+      details.push(el("section", { class: "section", "aria-labelledby": "contact-title" }, [
+        el("h2", { class: "section-title", id: "contact-title", text: L.contactTitle }),
+        el("div", { class: "tiles" }, contactList.map(function (c) {
+          return el("a", linkAttrs(c, "tile", c.external), [
+            el("span", { class: "tile-icon", icon: c.icon }), el("span", { class: "tile-label", text: c.label }),
+          ]);
+        })),
+      ]));
+    }
+    if (linkList.length) {
+      details.push(el("section", { class: "section", "aria-labelledby": "links-title" }, [
+        el("h2", { class: "section-title", id: "links-title", text: L.linksTitle }),
+        el("ul", { class: "rows" }, linkList.map(function (l) {
+          var chevron = iconNode("chevron");
+          chevron.setAttribute("class", "row-chevron");
+          return el("li", {}, [el("a", linkAttrs(l, "row", true), [
+            el("span", { class: "row-icon", icon: l.icon }),
+            el("span", { class: "row-text" }, [
+              el("span", { class: "row-label", text: l.label }),
+              l.caption ? el("span", { class: "row-sub" + (l.wrap ? " wrap" : ""), text: l.caption }) : null,
+            ]),
+            chevron,
+          ])]);
+        })),
+      ]));
+    }
+    main.className = "card" + (cfg.demo ? " has-banner" : "");
+    return [
+      banner(),
+      el("header", { class: "pane" }, [
+        fillPortrait(el("div", { class: "avatar" })),
+        el("div", { class: "pane-body" }, [
+          title ? el("p", { class: "eyebrow", text: title }) : null,
+          fullName ? el("h1", { class: "name", text: fullName }) : null,
+          company ? el("p", { class: "company", text: company }) : null,
+          bio ? el("p", { class: "bio", text: bio }) : null,
+          saveButton("btn btn-primary"),
+        ]),
+        el("div", { class: "pane-tools" }, toolButtons("tool-btn")),
+      ]),
+      details.length ? el("div", { class: "details" }, details) : null,
+    ];
+  }
+
+  /* ===== Журнал: обложка с гигантским именем и типографским списком ===== */
+  function renderEditorial(main, contactList, linkList) {
+    var words = fullName.split(/\s+/).filter(Boolean);
+    var name = el("h1", { class: "ed-name" }, words.map(function (w, i) {
+      return el("span", { class: "ed-line" }, [el("span", { class: "ed-word", style: "--i:" + i, text: w })]);
+    }));
+
+    // Имя занимает всю ширину колонки: размер шрифта подбирается под самое длинное слово
+    function fitName() {
+      if (!words.length) return;
+      name.style.fontSize = "100px";
+      var widest = 0;
+      Array.prototype.forEach.call(name.querySelectorAll(".ed-word"), function (w) {
+        widest = Math.max(widest, w.getBoundingClientRect().width);
+      });
+      var share = parseFloat(getComputedStyle(name).getPropertyValue("--ed-name-h")) || 0.26;
+      var byWidth = 100 * name.clientWidth / (widest || 1);
+      var byHeight = window.innerHeight * share / (words.length * 0.94);
+      name.style.fontSize = Math.max(28, Math.floor(Math.min(byWidth, byHeight))) + "px";
+    }
+    window.addEventListener("resize", fitName);
+    setTimeout(fitName, 0);
+
+    // Лёгкий параллакс круга за курсором
+    window.addEventListener("pointermove", function (e) {
+      main.style.setProperty("--px", (e.clientX / window.innerWidth - 0.5).toFixed(3));
+      main.style.setProperty("--py", (e.clientY / window.innerHeight - 0.5).toFixed(3));
+    }, { passive: true });
+
+    main.className = "ed" + (cfg.demo ? " has-banner" : "");
+    return [
+      banner(),
+      el("header", { class: "ed-top" }, [
+        el("span", { class: "ed-mast", text: company || L.cardWord }),
+        el("div", { class: "ed-tools" }, [
+          el("button", { type: "button", class: "ed-link", id: "share", text: L.share, onclick: share }),
+          el("button", { type: "button", class: "ed-link", id: "show-qr", text: L.showQr, onclick: openQr }),
+        ]),
+      ]),
+      el("div", { class: "ed-hero" }, [
+        el("div", { class: "ed-art" }, [fillPortrait(el("div", { class: "ed-disc" }))]),
+        name,
+        title ? el("p", { class: "ed-role", text: title }) : null,
+        bio ? el("p", { class: "ed-bio", text: bio }) : null,
+      ]),
+      el("div", { class: "ed-side" }, [
+        contactList.length ? el("ol", { class: "ed-list" }, contactList.map(function (c, i) {
+          return el("li", { style: "--i:" + i }, [el("a", linkAttrs(c, "ed-row", c.external), [
+            el("span", { class: "ed-num", text: (i < 9 ? "0" : "") + (i + 1) }),
+            el("span", { class: "ed-label", text: c.label }),
+            el("span", { class: "ed-value", text: c.value }),
+            iconNode("chevron"),
+          ])]);
+        })) : null,
+        linkList.length ? el("nav", { class: "ed-links", "aria-label": L.linksTitle }, linkList.map(function (l) {
+          return el("a", linkAttrs(l, "", true), [el("span", { text: l.label })]);
+        })) : null,
+        saveButton("ed-save", "chevron"),
+      ]),
+    ];
+  }
+
+  /* ===== Золото: ар-деко, портрет в арке, рамка ===== */
+  function renderLuxe(main, contactList, linkList) {
+    main.className = "lx" + (cfg.demo ? " has-banner" : "");
+    return [
+      banner(),
+      el("div", { class: "lx-frame" }, [
+        el("div", { class: "lx-arch" }, [fillPortrait(el("div", { class: "lx-arch-in" }))]),
+        title ? el("p", { class: "lx-eyebrow", text: title }) : null,
+        fullName ? el("h1", { class: "lx-name", text: fullName }) : null,
+        el("div", { class: "lx-orn", "aria-hidden": "true" }, [el("span"), el("i"), el("span")]),
+        company ? el("p", { class: "lx-company", text: company }) : null,
+        bio ? el("p", { class: "lx-bio", text: bio }) : null,
+        saveButton("lx-save"),
+        contactList.length ? el("div", { class: "lx-grid" }, contactList.map(function (c, i) {
+          var a = el("a", linkAttrs(c, "lx-tile", c.external), [iconNode(c.icon), el("span", { text: c.label })]);
+          a.style.setProperty("--i", i);
+          return a;
+        })) : null,
+        linkList.length ? el("nav", { class: "lx-links", "aria-label": L.linksTitle }, linkList.map(function (l, i) {
+          var a = el("a", linkAttrs(l, "lx-ico", true), [iconNode(l.icon)]);
+          a.setAttribute("aria-label", l.aria || l.label);
+          a.setAttribute("title", l.label);
+          a.style.setProperty("--i", i);
+          return a;
+        })) : null,
+        el("div", { class: "lx-tools" }, toolButtons("lx-tool")),
+      ]),
+    ];
+  }
+
+  /* ===== Аврора: контакты на орбите вокруг портрета, стеклянный док ===== */
+  function renderAurora(main, contactList, linkList) {
+    var stage = el("div", { class: "au-stage" }, [
+      el("div", { class: "au-orbit" }, [
+        el("div", { class: "au-path", "aria-hidden": "true" }),
+        fillPortrait(el("div", { class: "au-avatar" })),
+        el("div", { class: "au-ring" }, contactList.map(function (c, i) {
+          var a = el("a", linkAttrs(c, "au-sat", c.external), [el("span", { class: "au-sat-in", icon: c.icon })]);
+          a.setAttribute("aria-label", c.label);
+          a.setAttribute("title", c.label);
+          a.style.setProperty("--a", (-45 + i * 360 / contactList.length) + "deg");
+          a.style.setProperty("--i", i);
+          return a;
+        })),
+      ]),
+      el("div", { class: "au-text" }, [
+        title ? el("p", { class: "au-eyebrow", text: title }) : null,
+        fullName ? el("h1", { class: "au-name", text: fullName }) : null,
+        company ? el("p", { class: "au-company", text: company }) : null,
+        bio ? el("p", { class: "au-bio", text: bio }) : null,
+        saveButton("au-save"),
+      ]),
+      el("div", { class: "au-tools" }, toolButtons("au-tool")),
+    ]);
+
+    // Свечение, следующее за курсором (на компьютере)
+    window.addEventListener("pointermove", function (e) {
+      var r = stage.getBoundingClientRect();
+      stage.style.setProperty("--mx", (e.clientX - r.left) + "px");
+      stage.style.setProperty("--my", (e.clientY - r.top) + "px");
+    }, { passive: true });
+
+    main.className = "au" + (cfg.demo ? " has-banner" : "");
+    return [
+      banner(),
+      stage,
+      linkList.length ? el("nav", { class: "au-dock", "aria-label": L.linksTitle }, linkList.map(function (l, i) {
+        var a = el("a", linkAttrs(l, "au-dock-item", true), [iconNode(l.icon), el("span", { text: l.label })]);
+        a.style.setProperty("--i", i);
+        return a;
+      })) : null,
+    ];
   }
 
   function render() {
     var main = document.getElementById("card");
-    var parts = [];
-
-    // Плашка демо-режима с переключателем вариантов оформления
-    if (cfg.demo) {
-      var names = Object.assign({}, DEFAULT_LABELS.variantNames, L.variantNames || {});
-      parts.push(el("div", { class: "demo-banner" }, [
-        el("span", { text: L.demoBanner }),
-        el("nav", { class: "variant-links", "aria-label": L.demoBanner }, VARIANTS.map(function (v) {
-          return el("a", { href: "?v=" + v, "aria-current": v === variant ? "true" : null, text: names[v] || v });
-        })),
-      ]));
-    }
-    var details = [];
-
-    // Панель с именем и главным действием
-    var avatar = el("div", { class: "avatar" });
-    if (str(person.photo)) {
-      var img = el("img", { src: str(person.photo), alt: fullName, width: "112", height: "112", decoding: "async" });
-      img.addEventListener("error", function () { avatar.textContent = initials(); });
-      avatar.appendChild(img);
-    } else {
-      avatar.textContent = initials();
-      avatar.setAttribute("aria-hidden", "true");
-    }
-    var title = str(person.title), company = str(person.company);
-    var hero = el("header", { class: "pane" }, [
-      avatar,
-      el("div", { class: "pane-body" }, [
-        title ? el("p", { class: "eyebrow", text: title }) : null,
-        fullName ? el("h1", { class: "name", text: fullName }) : null,
-        company ? el("p", { class: "company", text: company }) : null,
-        str(person.bio) ? el("p", { class: "bio", text: str(person.bio) }) : null,
-        el("button", { type: "button", class: "btn btn-primary", id: "save-contact", onclick: saveContact },
-          [iconNode("userPlus"), el("span", { text: L.saveContact })]),
-      ]),
-      // «Поделиться» и «QR-код» — в углах панели
-      el("div", { class: "pane-tools" }, [
-        el("button", { type: "button", class: "tool-btn", id: "share", "aria-label": L.share, title: L.share, icon: "share", onclick: share }),
-        el("button", { type: "button", class: "tool-btn", id: "show-qr", "aria-label": L.showQr, title: L.showQr, icon: "qr", onclick: openQr }),
-      ]),
-    ]);
-    parts.push(hero);
-
-    // Связаться
-    var tiles = [];
-    var tel = window.CardVCard.normalizePhone(contacts.phone);
-    if (tel) tiles.push(tile("tel:" + tel, "phone", L.call));
-    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str(contacts.email))) tiles.push(tile("mailto:" + str(contacts.email), "mail", L.email));
-    var wa = phoneDigits(contacts.whatsapp);
-    if (wa) tiles.push(tile("https://wa.me/" + wa, "whatsapp", L.whatsapp, true));
-    var tg = telegramUrl(contacts.telegram);
-    if (tg) tiles.push(tile(tg, "telegram", L.telegram, true));
-    if (tiles.length) {
-      details.push(el("section", { class: "section", "aria-labelledby": "contact-title" }, [
-        el("h2", { class: "section-title", id: "contact-title", text: L.contactTitle }),
-        el("div", { class: "tiles" }, tiles),
-      ]));
-    }
-
-    // Ссылки и адрес
-    var rows = [];
-    [["instagram", "instagram"], ["facebook", "facebook"], ["linkedin", "linkedin"], ["website", "globe"]].forEach(function (pair) {
-      var url = webUrl(links[pair[0]]);
-      if (url) rows.push(row(url, pair[1], L[pair[0]], linkCaption(url, pair[0] === "website")));
-    });
-    var addressText = [address.street, address.city, address.region, address.postalCode, address.country].map(str).filter(Boolean).join(", ");
-    if (addressText) {
-      var mapUrl = webUrl(address.mapUrl) || "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(addressText);
-      var r = row(mapUrl, "pin", L.address, addressText, true);
-      r.querySelector("a").setAttribute("aria-label", L.address + ": " + addressText + ". " + L.openMap);
-      rows.push(r);
-    }
-    if (rows.length) {
-      details.push(el("section", { class: "section", "aria-labelledby": "links-title" }, [
-        el("h2", { class: "section-title", id: "links-title", text: L.linksTitle }),
-        el("ul", { class: "rows" }, rows),
-      ]));
-    }
-
-    if (details.length) parts.push(el("div", { class: "details" }, details));
-    main.classList.toggle("has-banner", !!cfg.demo);
-    main.replaceChildren.apply(main, parts);
+    var renderers = { classic: renderClassic, editorial: renderEditorial, luxe: renderLuxe, aurora: renderAurora };
+    var parts = renderers[variant](main, collectContacts(), collectLinks());
+    main.replaceChildren.apply(main, parts.filter(Boolean));
     main.removeAttribute("aria-busy");
   }
 
