@@ -14,7 +14,7 @@ window.CARD_CONFIG = {
   // Постоянный публичный HTTPS-адрес визитки. Именно он кодируется в QR-коде.
   // Пока здесь демо-адрес, localhost или не-HTTPS, скачивание QR-кода заблокировано.
   // ЗАМЕНИТЬ после публикации, например: "https://card.ваш-домен.am/"
-  publicUrl: "https://example.com/",
+  publicUrl: "https://digital-card-zeta-sable.vercel.app/?v=aurora",
 
   person: {
     firstName: "Имя",            // ЗАМЕНИТЬ
