@@ -9,7 +9,7 @@
  */
 window.CARD_CONFIG = {
   // true — на странице показывается плашка «Демо-данные». После замены данных поставьте false.
-  demo: true,
+  demo: false,
 
   // Постоянный публичный HTTPS-адрес визитки. Именно он кодируется в QR-коде.
   // Пока здесь демо-адрес, localhost или не-HTTPS, скачивание QR-кода заблокировано.
@@ -17,39 +17,39 @@ window.CARD_CONFIG = {
   publicUrl: "https://card.dpb.agency/",
 
   person: {
-    firstName: "Имя",            // ЗАМЕНИТЬ
-    lastName: "Фамилия",         // ЗАМЕНИТЬ
+    firstName: "Inga",
+    lastName: "Grigoryan",
     // Необязательно: как показывать имя на странице. Если пусто — «Имя Фамилия».
     displayName: "",
-    title: "Должность (демо)",   // ЗАМЕНИТЬ
-    company: "Название компании (демо)", // ЗАМЕНИТЬ
-    bio: "Короткое описание: чем вы занимаетесь и чем можете быть полезны. Это демонстрационный текст — замените его.",
+    title: "Design Expert",
+    company: "Design People Business",
+    bio: "",
     // Путь к фото или логотипу, например "assets/photo.jpg" (квадрат, от 400×400 px).
     // Если пусто — показываются инициалы.
     photo: "",
   },
 
   contacts: {
-    phone: "+374 00 000000",       // ДЕМО. Международный формат с «+»
-    email: "name@example.com",     // ДЕМО
-    whatsapp: "+374 00 000000",    // ДЕМО. Номер в международном формате
-    telegram: "REPLACE_ME",        // ДЕМО. Имя пользователя без @ (или полная ссылка https://t.me/...)
+    phone: "+374 33 310 301",      // Международный формат с «+»
+    email: "designpeoplebusiness@gmail.com",
+    whatsapp: "",                  // Номер в международном формате, например "+374 33 310 301"
+    telegram: "",                  // Имя пользователя без @ (или полная ссылка https://t.me/...)
   },
 
   links: {
-    instagram: "https://www.instagram.com/REPLACE_ME", // ДЕМО
-    facebook: "https://www.facebook.com/REPLACE_ME",   // ДЕМО
-    linkedin: "https://www.linkedin.com/in/REPLACE_ME", // ДЕМО
-    website: "https://example.com",                    // ДЕМО
+    instagram: "",
+    facebook: "",
+    linkedin: "",
+    website: "",
   },
 
   // Если все поля адреса пустые — блок адреса скрыт.
   address: {
-    street: "ул. Демонстрационная, 1", // ДЕМО
-    city: "Ереван",
+    street: "",
+    city: "",
     region: "",
     postalCode: "",
-    country: "Армения",
+    country: "",
     // Необязательно: точная ссылка на карту (Google Maps / Яндекс Карты).
     // Если пусто — ссылка строится автоматически по тексту адреса.
     mapUrl: "",
@@ -77,7 +77,7 @@ window.CARD_CONFIG = {
   },
 
   // Имя скачиваемого файла контакта (латиницей, без расширения).
-  vcardFileName: "contact",
+  vcardFileName: "inga-grigoryan",
 
   // Язык страницы для браузера и скринридеров: "ru", "hy", "en".
   lang: "ru",
