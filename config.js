@@ -14,7 +14,7 @@ window.CARD_CONFIG = {
   // Постоянный публичный HTTPS-адрес визитки. Именно он кодируется в QR-коде.
   // Пока здесь демо-адрес, localhost или не-HTTPS, скачивание QR-кода заблокировано.
   // ЗАМЕНИТЬ после публикации, например: "https://card.ваш-домен.am/"
-  publicUrl: "https://digital-card-zeta-sable.vercel.app/?v=aurora",
+  publicUrl: "https://card.dpb.agency/",
 
   person: {
     firstName: "Имя",            // ЗАМЕНИТЬ
@@ -62,7 +62,7 @@ window.CARD_CONFIG = {
   //   "aurora"    — «Аврора»: живой фон, контакты на орбите вокруг портрета
   // Для показа вариантов можно открыть страницу с ?v=editorial, ?v=luxe или ?v=aurora
   // в адресе (пока demo: true, переключатель есть прямо на странице).
-  variant: "classic",
+  variant: "aurora",
 
   // Необязательно: свои цвета панели — только для варианта "classic".
   // accent — фон панели с именем, onAccent — текст и кнопка на ней (нужна контрастная пара).
