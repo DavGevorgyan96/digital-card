@@ -295,18 +295,24 @@
     var quiet = window.CardQR.QUIET_ZONE;
     var total = m.length + quiet * 2;
     var scale = Math.max(1, Math.floor((targetPx || 2400) / total)); // целое число пикселей на модуль
-    var canvas = document.createElement("canvas");
-    canvas.width = canvas.height = total * scale;
-    var ctx = canvas.getContext("2d");
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#000000";
-    m.forEach(function (row, r) {
-      row.forEach(function (dark, c) {
-        if (dark) ctx.fillRect((c + quiet) * scale, (r + quiet) * scale, scale, scale);
-      });
+    var px = total * scale;
+    // Рисуем тот же SVG (точки и скруглённые углы), что показан в окне.
+    var url = URL.createObjectURL(new Blob([window.CardQR.svg(text, px)], { type: "image/svg+xml" }));
+    return new Promise(function (resolve) {
+      var img = new Image();
+      img.onload = function () {
+        var canvas = document.createElement("canvas");
+        canvas.width = canvas.height = px;
+        var ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, px, px);
+        ctx.drawImage(img, 0, 0, px, px);
+        URL.revokeObjectURL(url);
+        canvas.toBlob(resolve, "image/png");
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); resolve(null); };
+      img.src = url;
     });
-    return new Promise(function (resolve) { canvas.toBlob(resolve, "image/png"); });
   }
 
   function openQr() {
@@ -358,17 +364,27 @@
 
   // ---------- Сборка страницы ----------
   // Общие данные для всех вариантов: проверенные ссылки и подписи.
+  // Пустые поля: при showEmpty: true кнопка видна, но приглушена и не нажимается
+  // (удобно, пока не все контакты известны). Иначе — скрыта.
+  var showEmpty = cfg.showEmpty === true;
+  function emptyItem(key, icon, label) {
+    return { key: key, href: null, icon: icon, label: label, value: "", caption: "", empty: true, aria: label };
+  }
+
   function collectContacts() {
     var list = [];
     var tel = window.CardVCard.normalizePhone(contacts.phone);
     if (tel) list.push({ key: "call", href: "tel:" + tel, icon: "phone", label: L.call, value: str(contacts.phone) });
+    else if (showEmpty) list.push(emptyItem("call", "phone", L.call));
     if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str(contacts.email))) {
       list.push({ key: "email", href: "mailto:" + str(contacts.email), icon: "mail", label: L.email, value: str(contacts.email) });
-    }
+    } else if (showEmpty) list.push(emptyItem("email", "mail", L.email));
     var wa = phoneDigits(contacts.whatsapp);
     if (wa) list.push({ key: "whatsapp", href: "https://wa.me/" + wa, icon: "whatsapp", label: L.whatsapp, value: str(contacts.whatsapp), external: true });
+    else if (showEmpty) list.push(emptyItem("whatsapp", "whatsapp", L.whatsapp));
     var tg = telegramUrl(contacts.telegram);
     if (tg) list.push({ key: "telegram", href: tg, icon: "telegram", label: L.telegram, value: linkCaption(tg), external: true });
+    else if (showEmpty) list.push(emptyItem("telegram", "telegram", L.telegram));
     return list;
   }
 
@@ -377,6 +393,7 @@
     [["instagram", "instagram"], ["facebook", "facebook"], ["linkedin", "linkedin"], ["website", "globe"]].forEach(function (pair) {
       var url = webUrl(links[pair[0]]);
       if (url) list.push({ key: pair[0], href: url, icon: pair[1], label: L[pair[0]], caption: linkCaption(url, pair[0] === "website") });
+      else if (showEmpty) list.push(emptyItem(pair[0], pair[1], L[pair[0]]));
     });
     var addressText = [address.street, address.city, address.region, address.postalCode, address.country].map(str).filter(Boolean).join(", ");
     if (addressText) {
@@ -385,11 +402,14 @@
         href: webUrl(address.mapUrl) || "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(addressText),
         aria: L.address + ": " + addressText + ". " + L.openMap,
       });
-    }
+    } else if (showEmpty) list.push(emptyItem("address", "pin", L.address));
     return list;
   }
 
   function linkAttrs(item, cls, external) {
+    if (item.empty) {
+      return { class: cls + " is-empty", "aria-label": item.aria || null, "aria-disabled": "true", title: item.label };
+    }
     return {
       class: cls, href: item.href, "aria-label": item.aria || null,
       target: external ? "_blank" : null, rel: external ? "noopener noreferrer" : null,

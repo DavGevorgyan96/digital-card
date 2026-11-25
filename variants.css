@@ -1141,3 +1141,6 @@
 @media (min-width: 960px) {
   .au.has-banner { padding-top: calc(40px + clamp(8px, calc(2 * var(--vh)), 24px)); }
 }
+
+/* Пустая кнопка (config.showEmpty: true): видна как обычная, но не нажимается */
+a.is-empty { pointer-events: none; cursor: default; }
